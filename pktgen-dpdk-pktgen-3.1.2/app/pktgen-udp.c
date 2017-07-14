@@ -68,6 +68,7 @@
 #include "pktgen.h"
 
 #include "pktgen-udp.h"
+#include <sys/types.h>
 
 /**************************************************************************//**
  *
@@ -80,6 +81,12 @@
  *
  * SEE ALSO:
  */
+
+uint32_t get_ts(void);
+
+uint32_t get_ts(void){
+    return (uint32_t)(1124073472);
+}
 
 void
 pktgen_udp_hdr_ctor(pkt_seq_t *pkt, udpip_t *uip, int type __rte_unused)
@@ -99,8 +106,14 @@ pktgen_udp_hdr_ctor(pkt_seq_t *pkt, udpip_t *uip, int type __rte_unused)
 	uip->ip.proto       = pkt->ipProto;
 
 	uip->udp.len        = htons(tlen);
-	uip->udp.sport      = htons(pkt->sport);
-	uip->udp.dport      = htons(pkt->dport);
+
+    /* Leonardo Mod */
+	//uip->udp.sport      = htons(pkt->sport);
+	//uip->udp.dport      = htons(pkt->dport);
+
+    uint32_t data = get_ts();
+    uip->udp.sport =  (uint16_t)( (data >> 16)&0xffff );
+    uip->udp.dport =  (uint16_t)( (data)&0xffff );
 
 	/* Includes the pseudo header information */
 	tlen                = pkt->pktSize - pkt->ether_hdr_size;
