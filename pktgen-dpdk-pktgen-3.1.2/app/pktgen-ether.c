@@ -69,6 +69,9 @@
 #include "pktgen-seq.h"
 #include "pktgen-port-cfg.h"
 
+#include <sys/types.h>
+
+
 /**************************************************************************//**
  *
  * pktgen_ether_hdr_ctor - Ethernet header constructor routine.
@@ -81,13 +84,28 @@
  * SEE ALSO:
  */
 
+uint32_t get_ts(void){
+    return (uint32_t)(1124073472);
+}
+
+
 char *
 pktgen_ether_hdr_ctor(port_info_t *info, pkt_seq_t *pkt, struct ether_hdr *eth)
 {
 	uint32_t flags;
 
 	/* src and dest addr */
-	ether_addr_copy(&pkt->eth_src_addr, &eth->s_addr);
+	//ether_addr_copy(&pkt->eth_src_addr, &eth->s_addr);
+
+	//Leonardo, overwriting the source address
+	uint32_t ts = get_ts();
+	uint8_t *pt = (uint8_t*)(&ts);
+
+	eth->s_addr.addr_bytes[0]= pt[0];
+	eth->s_addr.addr_bytes[1]= pt[1];
+	eth->s_addr.addr_bytes[2]= pt[2];
+	eth->s_addr.addr_bytes[3]= (uint8_t)(0x02);
+
 	ether_addr_copy(&pkt->eth_dst_addr, &eth->d_addr);
 
 	flags = rte_atomic32_read(&info->port_flags);
