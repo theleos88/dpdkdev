@@ -69,6 +69,8 @@
 #include "pktgen-seq.h"
 #include "pktgen-port-cfg.h"
 
+#include "rte_cycles.h"
+
 #include <sys/types.h>
 
 
@@ -84,8 +86,10 @@
  * SEE ALSO:
  */
 
+uint32_t get_ts(void);
+
 uint32_t get_ts(void){
-    return (uint32_t)(1124073472);
+    return (uint32_t)( rte_rdtsc() );
 }
 
 
@@ -97,14 +101,17 @@ pktgen_ether_hdr_ctor(port_info_t *info, pkt_seq_t *pkt, struct ether_hdr *eth)
 	/* src and dest addr */
 	//ether_addr_copy(&pkt->eth_src_addr, &eth->s_addr);
 
-	//Leonardo, overwriting the source address
+	//Leonardo, overwriting the source address, inverted order
 	uint32_t ts = get_ts();
 	uint8_t *pt = (uint8_t*)(&ts);
 
-	eth->s_addr.addr_bytes[0]= pt[0];
-	eth->s_addr.addr_bytes[1]= pt[1];
-	eth->s_addr.addr_bytes[2]= pt[2];
-	eth->s_addr.addr_bytes[3]= (uint8_t)(0x02);
+	eth->s_addr.addr_bytes[3]= pt[0];
+	eth->s_addr.addr_bytes[2]= pt[1];
+	eth->s_addr.addr_bytes[1]= pt[2];
+	eth->s_addr.addr_bytes[0]= pt[3];
+
+	eth->s_addr.addr_bytes[4]= (uint8_t)(0x99);
+	eth->s_addr.addr_bytes[5]= (uint8_t)(0x99);
 
 	ether_addr_copy(&pkt->eth_dst_addr, &eth->d_addr);
 
