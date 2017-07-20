@@ -90,20 +90,18 @@
  * SEE ALSO:
  */
 
+
+#ifdef ENABLESYSCALL
+
 #define NANOSECS    (1000000000)
 #define CONVERSION ( 1 / 10)
 #define SECONDS ( NANOSECS * CONVERSION )
-
 inline uint32_t unix_time_now_nsec(void);
-
 inline uint32_t unix_time_now_nsec(void){
-
     struct timespec ts;
     syscall (SYS_clock_gettime, CLOCK_REALTIME, &ts);
-
     /*struct timeval ts;        //We decided to avoid gettimeofday
     gettimeofday(&ts, NULL);*/
-
     //printf("S: %lu, NS/10: %lu TS: %u\n", ((ts.tv_sec & 0x1f)<<27),  (ts.tv_nsec/10), (uint32_t)( ((ts.tv_sec & 0x1f )<<27) +  (ts.tv_nsec/10) ) );
     //return 1e6 * ts.tv_sec + ts.tv_usec;    //Microseconds precision
     //return   ( ts.tv_sec & 0x1f )*SECONDS + (ts.tv_nsec*CONVERSION)  ;    // 10s Nanoseconds precision
@@ -111,23 +109,22 @@ inline uint32_t unix_time_now_nsec(void){
 
 }
 
+#endif
+
 uint32_t get_ts(void);
+inline uint32_t get_ts(void){
 
-uint32_t old_ts;
+    uint32_t lo, hi, ts;
+    asm volatile("rdtsc" :
+             "=a" (lo),
+             "=d" (hi));
+    ts = ( (lo>>5) & 0x7ffffff ) + ((hi & 0x1f) << 27 );
 
-uint32_t get_ts(void){
-
-    //return (uint32_t)( 123456789 );
-    //uint32_t ts =  (rte_rdtsc_precise() );
-    uint32_t ts = unix_time_now_nsec();
-    printf ("TS: %u TS-old: %u\n", ts, ts-old_ts);
-    old_ts=ts;
-
+    //printf ("NEWLO: %u, NEWHi: %u, ||| TS: %u TS-old: %u\n", (lo>>5) & 0x7ffffff  , (hi & 0x1f) << 27  , ts, ts-old_ts);
     return ts;
     //return unix_time_now_usec();
     //return (uint32_t)( rte_rdtsc_precise() & 0xffffffff );
 }
-
 
 char *
 pktgen_ether_hdr_ctor(port_info_t *info, pkt_seq_t *pkt, struct ether_hdr *eth)
