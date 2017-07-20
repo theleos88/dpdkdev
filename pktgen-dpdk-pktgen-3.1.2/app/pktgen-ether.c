@@ -73,6 +73,10 @@
 
 #include <sys/types.h>
 
+/* these two are for unix time nsec now */
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <sys/time.h>
 
 /**************************************************************************//**
  *
@@ -86,10 +90,42 @@
  * SEE ALSO:
  */
 
+#define NANOSECS    (1000000000)
+#define CONVERSION ( 1 / 10)
+#define SECONDS ( NANOSECS * CONVERSION )
+
+inline uint32_t unix_time_now_nsec(void);
+
+inline uint32_t unix_time_now_nsec(void){
+
+    struct timespec ts;
+    syscall (SYS_clock_gettime, CLOCK_REALTIME, &ts);
+
+    /*struct timeval ts;        //We decided to avoid gettimeofday
+    gettimeofday(&ts, NULL);*/
+
+    //printf("S: %lu, NS/10: %lu TS: %u\n", ((ts.tv_sec & 0x1f)<<27),  (ts.tv_nsec/10), (uint32_t)( ((ts.tv_sec & 0x1f )<<27) +  (ts.tv_nsec/10) ) );
+    //return 1e6 * ts.tv_sec + ts.tv_usec;    //Microseconds precision
+    //return   ( ts.tv_sec & 0x1f )*SECONDS + (ts.tv_nsec*CONVERSION)  ;    // 10s Nanoseconds precision
+    return (uint32_t)( ((ts.tv_sec & 0x1f )<<27) +  (ts.tv_nsec/10) );
+
+}
+
 uint32_t get_ts(void);
 
+uint32_t old_ts;
+
 uint32_t get_ts(void){
-    return (uint32_t)( rte_rdtsc() );
+
+    //return (uint32_t)( 123456789 );
+    //uint32_t ts =  (rte_rdtsc_precise() );
+    uint32_t ts = unix_time_now_nsec();
+    printf ("TS: %u TS-old: %u\n", ts, ts-old_ts);
+    old_ts=ts;
+
+    return ts;
+    //return unix_time_now_usec();
+    //return (uint32_t)( rte_rdtsc_precise() & 0xffffffff );
 }
 
 
