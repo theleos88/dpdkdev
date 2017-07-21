@@ -91,6 +91,12 @@
  */
 
 
+
+#define ENABLESYSCALL
+
+
+
+
 #ifdef ENABLESYSCALL
 
 #define NANOSECS    (1000000000)
@@ -105,22 +111,42 @@ inline uint32_t unix_time_now_nsec(void){
     //printf("S: %lu, NS/10: %lu TS: %u\n", ((ts.tv_sec & 0x1f)<<27),  (ts.tv_nsec/10), (uint32_t)( ((ts.tv_sec & 0x1f )<<27) +  (ts.tv_nsec/10) ) );
     //return 1e6 * ts.tv_sec + ts.tv_usec;    //Microseconds precision
     //return   ( ts.tv_sec & 0x1f )*SECONDS + (ts.tv_nsec*CONVERSION)  ;    // 10s Nanoseconds precision
-    return (uint32_t)( ((ts.tv_sec & 0x1f )<<27) +  (ts.tv_nsec/10) );
+    return (uint32_t)( ((ts.tv_sec & 0x1f )<<27) +  (ts.tv_nsec >> 5) );
 
 }
 
 #endif
 
+
+
+
 uint32_t get_ts(void);
 inline uint32_t get_ts(void){
+//bypass time; use fixed creds
+	return 0;
 
+
+	#ifdef INTELRDT    
     uint32_t lo, hi, ts;
     asm volatile("rdtsc" :
              "=a" (lo),
              "=d" (hi));
-    ts = ( (lo>>5) & 0x7ffffff ) + ((hi & 0x1f) << 27 );
 
-    //printf ("NEWLO: %u, NEWHi: %u, ||| TS: %u TS-old: %u\n", (lo>>5) & 0x7ffffff  , (hi & 0x1f) << 27  , ts, ts-old_ts);
+    // Time Unit: 32 clk (2^5)
+    
+    ts = ( (lo>>5) & 0x7ffffff ) + ((hi & 0x1f) << 27 );
+	
+    #else
+
+	volatile uint32_t ts;
+    /*Calling a rdtscp*/
+    
+    // Coming back to old fashioned rte_rdtsc
+    ts = ( (rte_rdtsc_precise()>>5) & 0xffffffff );
+
+    #endif
+
+    //printf ("NEWLO: %u, NEWHi: %u, ||| TS: %u\n", (lo>>5) & 0x7ffffff  , (hi & 0x1f) << 27  , ts);
     return ts;
     //return unix_time_now_usec();
     //return (uint32_t)( rte_rdtsc_precise() & 0xffffffff );
@@ -135,8 +161,11 @@ pktgen_ether_hdr_ctor(port_info_t *info, pkt_seq_t *pkt, struct ether_hdr *eth)
 	//ether_addr_copy(&pkt->eth_src_addr, &eth->s_addr);
 
 	//Leonardo, overwriting the source address, inverted order
+
 	uint32_t ts = get_ts();
-	uint8_t *pt = (uint8_t*)(&ts);
+    //uint32_t ts = unix_time_now_nsec();
+
+    uint8_t *pt = (uint8_t*)(&ts);
 
 	eth->s_addr.addr_bytes[3]= pt[0];
 	eth->s_addr.addr_bytes[2]= pt[1];
