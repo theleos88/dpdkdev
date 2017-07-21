@@ -70,7 +70,8 @@
 #include "pktgen.h"
 #include "pktgen-log.h"
 #include "pktgen-ipv4.h"
-
+#include "stdlib.h"
+#include "math.h"
 /**************************************************************************//**
  *
  * pktgen_ipv4_ctor - Construct the IPv4 header for a packet
@@ -83,11 +84,40 @@
  * SEE ALSO:
  */
 
+#define RANDRANGE 20
+
+double uniform()
+{
+    return((double) rand()/RAND_MAX);
+}
+
+double exponential()
+{
+    return((double) -10*log(1.-uniform()));
+}
+
+
+uint32_t get_exp_rand_ip(){
+    return (((int)(exponential()) % RANDRANGE));
+}
+
+uint32_t get_bell_rand_ip(){
+    return ((rand() % (RANDRANGE/2))+(rand() % (RANDRANGE/2)));
+}
+
+uint32_t get_rand_ip(){
+    uint32_t rand = get_bell_rand_ip();
+    uint32_t ip;
+    ip = ((rand+3) << 24) | (2 << 16) | (1 << 8) | 11 ;
+    //ip = (rand << 24) | (rand << 16) | (rand << 8) | (rand);
+    return ip;
+}
+
+
 void
 pktgen_ipv4_ctor(pkt_seq_t *pkt, ipHdr_t *ip)
 {
 	uint16_t tlen;
-
 	/* IPv4 Header constructor */
 	tlen                = pkt->pktSize - pkt->ether_hdr_size;
 
@@ -104,8 +134,8 @@ pktgen_ipv4_ctor(pkt_seq_t *pkt, ipHdr_t *ip)
 	ip->ident           = htons(pktgen.ident);
 	ip->ffrag           = 0;
 	ip->proto           = pkt->ipProto;
-	ip->src             = htonl(pkt->ip_src_addr.addr.ipv4.s_addr);
-	ip->dst             = htonl(pkt->ip_dst_addr.addr.ipv4.s_addr);
+	ip->src             = htonl(pkt->ip_src_addr.addr.ipv4.s_addr  );
+	ip->dst             = htonl(pkt->ip_dst_addr.addr.ipv4.s_addr + get_rand_ip() );
 	ip->cksum           = cksum(ip, sizeof(ipHdr_t), 0);
 }
 
