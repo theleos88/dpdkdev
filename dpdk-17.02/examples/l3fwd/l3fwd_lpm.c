@@ -56,6 +56,8 @@
 #include <rte_lpm6.h>
 
 #include "l3fwd.h"
+#include "forwarding_table.h"
+
 
 struct ipv4_l3fwd_lpm_route {
 	uint32_t ip;
@@ -69,16 +71,21 @@ struct ipv6_l3fwd_lpm_route {
 	uint8_t  if_out;
 };
 
+/* LL  Sending all packets to the same interface, so all 0 instead of 0123456... */
+/*
 static struct ipv4_l3fwd_lpm_route ipv4_l3fwd_lpm_route_array[] = {
 	{IPv4(1, 1, 1, 0), 24, 0},
-	{IPv4(2, 1, 1, 0), 24, 1},
-	{IPv4(3, 1, 1, 0), 24, 2},
-	{IPv4(4, 1, 1, 0), 24, 3},
-	{IPv4(5, 1, 1, 0), 24, 4},
-	{IPv4(6, 1, 1, 0), 24, 5},
-	{IPv4(7, 1, 1, 0), 24, 6},
-	{IPv4(8, 1, 1, 0), 24, 7},
+	{IPv4(2, 1, 1, 0), 24, 0},
+	{IPv4(3, 1, 1, 0), 24, 0},
+	{IPv4(4, 1, 1, 0), 24, 0},
+	{IPv4(5, 1, 1, 0), 24, 0},
+	{IPv4(6, 1, 1, 0), 24, 0},
+	{IPv4(7, 1, 1, 0), 24, 0},
+	{IPv4(8, 1, 1, 0), 24, 0},
 };
+*/
+static struct ipv4_l3fwd_lpm_route ipv4_l3fwd_lpm_route_array[] = FORWARDING_TABLE;
+
 
 static struct ipv6_l3fwd_lpm_route ipv6_l3fwd_lpm_route_array[] = {
 	{{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 48, 0},
@@ -96,7 +103,7 @@ static struct ipv6_l3fwd_lpm_route ipv6_l3fwd_lpm_route_array[] = {
 #define IPV6_L3FWD_LPM_NUM_ROUTES \
 	(sizeof(ipv6_l3fwd_lpm_route_array) / sizeof(ipv6_l3fwd_lpm_route_array[0]))
 
-#define IPV4_L3FWD_LPM_MAX_RULES         1024
+#define IPV4_L3FWD_LPM_MAX_RULES         (1024*1024)
 #define IPV4_L3FWD_LPM_NUMBER_TBL8S (1 << 8)
 #define IPV6_L3FWD_LPM_MAX_RULES         1024
 #define IPV6_L3FWD_LPM_NUMBER_TBL8S (1 << 16)
@@ -177,6 +184,10 @@ lpm_main_loop(__attribute__((unused)) void *dummy)
 				MAX_PKT_BURST);
 			if (nb_rx == 0)
 				continue;
+
+			#ifdef DEBUG
+			printf("Received %d packets from port %d and queue %d\n\n\n", nb_rx, portid, queueid);
+			#endif //DEBUG
 
 #if defined(__SSE4_1__)
 			l3fwd_lpm_send_packets(nb_rx, pkts_burst,
