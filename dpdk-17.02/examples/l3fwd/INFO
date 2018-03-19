@@ -1,0 +1,5 @@
+#To run it in one physical core (two logical cores):
+sudo ./build/l3fwd --lcores="(1-2)@9" -n 1 --socket-mem 2048 -- -p 0x3 -P --config="(0,0,1)(1,0,2)"  --parse-ptype
+
+#otherwise, the classic:
+#sudo ./build/l3fwd -l 9,10 -n 1 --socket-mem 2048 -- -P -p 0x3 --config="(0,0,9),(1,0,10)" --parse-ptype
