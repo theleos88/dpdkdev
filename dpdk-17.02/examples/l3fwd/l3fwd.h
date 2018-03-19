@@ -44,6 +44,8 @@
 #define NO_HASH_MULTI_LOOKUP 1
 #endif
 
+#define DEBUG 1
+
 #define MAX_PKT_BURST     32
 #define BURST_TX_DRAIN_US 100 /* TX drain every ~100us */
 
