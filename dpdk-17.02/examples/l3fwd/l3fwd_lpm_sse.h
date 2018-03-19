@@ -159,10 +159,19 @@ processx4_step2(const struct lcore_conf *qconf,
 	/* if all 4 packets are IPV4. */
 	if (likely(ipv4_flag)) {
 		rte_lpm_lookupx4(qconf->ipv4_lookup_struct, dip, dst.u32,
-			portid);
+			portid);	/* LL. Change default port here */
 		/* get rid of unused upper 16 bit for each dport. */
 		dst.x = _mm_packs_epi32(dst.x, dst.x);
 		*(uint64_t *)dprt = dst.u64[0];
+
+		#ifdef DEBUG
+		int m;
+		for (m=0;m<4;m++){
+			printf("Lookup: %d, Send: %d\n",dst.u32[m], portid );
+		}
+		printf("\n\n");
+		#endif //DEBUG
+
 	} else {
 		dst.x = dip;
 		dprt[0] = lpm_get_dst_port_with_ipv4(qconf, pkt[0], dst.u32[0], portid);
