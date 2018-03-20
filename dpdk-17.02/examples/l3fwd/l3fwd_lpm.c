@@ -104,7 +104,7 @@ static struct ipv6_l3fwd_lpm_route ipv6_l3fwd_lpm_route_array[] = {
 	(sizeof(ipv6_l3fwd_lpm_route_array) / sizeof(ipv6_l3fwd_lpm_route_array[0]))
 
 #define IPV4_L3FWD_LPM_MAX_RULES         (1024*1024)
-#define IPV4_L3FWD_LPM_NUMBER_TBL8S (1 << 8)
+#define IPV4_L3FWD_LPM_NUMBER_TBL8S (1 << 20) 	/*LL. modifying to allow more than 256 entries deeper than 24*/
 #define IPV6_L3FWD_LPM_MAX_RULES         1024
 #define IPV6_L3FWD_LPM_NUMBER_TBL8S (1 << 16)
 
